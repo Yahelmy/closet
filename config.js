@@ -4,6 +4,6 @@
    Keep the quotation marks. The key here is the PUBLISHABLE key (older projects call it the "anon" key).
    It is safe to publish. Never put a "secret" key or your AI key in this file. */
 window.CLOSET_CONFIG = {
-  url: "https://ekvfjfaeabbawbvrgbup.supabase.co",
-  key: "sb_publishable_20tKA7CW9W3X78dAp96p4A_r05gg3Bc"
+  url: "https://YOUR-PROJECT-ID.supabase.co",
+  key: "YOUR-PUBLISHABLE-KEY"
 };
