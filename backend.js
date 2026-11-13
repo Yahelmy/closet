@@ -231,6 +231,26 @@ function run(input,opts){
 var sample=function(input,opts){return run(input,opts).then(function(t){return {text:t,truncated:false}})};
 sample.json=function(input,opts){return run(input,opts).then(parseJSON)};
 sample.limits=function(){return Promise.resolve({images:{maxCount:4}})};
+/* Sends one photo to the "ai" function's cut-out mode and gets back a PNG with the background removed. */
+sample.cutout=async function(blob){
+  var s=(await sb.auth.getSession()).data.session;
+  if(!s)throw fail("session_expired");
+  var res;
+  try{
+    res=await fetch(cfg.url.replace(/\/+$/,"")+"/functions/v1/"+(cfg.functionName||"ai"),{method:"POST",
+      headers:{"content-type":"application/json",authorization:"Bearer "+s.access_token,apikey:cfg.key},body:JSON.stringify({mode:"cutout",image:await toB64(blob)})});
+  }catch(e){throw fail("upstream_error")}
+  if(res.ok&&/^image\//.test(res.headers.get("content-type")||"")){
+    var doubt=Number(res.headers.get("x-cut-uncertainty"));
+    return {blob:await res.blob(),doubt:isFinite(doubt)?doubt:0};
+  }
+  var out=null;try{out=await res.json()}catch(e){}
+  if(out&&out.error==="cutout_off")throw fail("cutout_off");
+  if(res.status===401)throw fail("session_expired");
+  if(out&&out.error==="rate_limited")throw fail("rate_limited");
+  notice("Cut-out service problem: "+((out&&out.message)||("error "+res.status)));
+  throw fail("upstream_error");
+};
 /* Searches the web for this season's trends and saves a fresh brief for the signed-in person. */
 sample.trends=function(){
   var today=new Date().toISOString().slice(0,10);

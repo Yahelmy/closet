@@ -37,7 +37,7 @@ img{max-width:100%}
   --bg:#ECEEF3; --surface:#FFFFFF; --sunk:#E1E4EC; --ink:#171C36; --muted:#5C637D; --line:#CBD0DD;
   --accent:#2742C9; --on-accent:#FFFFFF; --accent-soft:#DDE3FB; --mark:#E8A90C;
   --good:#17754A; --good-soft:#D9F0E4; --warn:#9A5B00; --warn-soft:#FBEBCB; --bad:#B3261E;
-  --fig:#D9C3B0; --fig-line:#171C36; --shade:rgba(23,28,54,.45);
+  --fig:#D9C3B0; --fig-line:#171C36; --shade:rgba(23,28,54,.45); --studio:#ECEEF3;
   --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
   --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"DM Mono",ui-monospace,"SF Mono",Menlo,monospace;
@@ -109,6 +109,29 @@ textarea{min-height:64px;resize:vertical}
 .tick{width:28px;height:28px;flex:0 0 auto;border-radius:8px;border:1.5px solid var(--ink);background:transparent;font-weight:700;line-height:1;padding:0}
 .tick[aria-pressed=true]{background:var(--good);border-color:var(--good);color:var(--surface)}
 .note .btn{margin-top:8px}
+/* mixer: stacked rows you slide through. Tops and bottoms share one backdrop and one scale so they line up. */
+.mix{--tw:min(56vw,240px,27vh);display:flex;flex-direction:column;gap:8px}
+.mrow{position:relative}
+.mchip{position:absolute;left:8px;top:8px;z-index:2;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap}
+.mstrip{position:relative;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 calc(50% - var(--tw)/2);scrollbar-width:none;overscroll-behavior-x:contain}
+.mstrip::-webkit-scrollbar{display:none}
+.mtile{flex:0 0 var(--tw);height:calc(var(--tw)*var(--r,1));scroll-snap-align:center;padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--sunk);opacity:.35;transform:scale(.9);transition:opacity .18s,transform .18s}
+.mtile img{width:100%;height:100%;object-fit:cover;display:block}
+.mtile.on{opacity:1;transform:none;border-color:var(--ink)}
+.mrow.stage .mstrip{background:var(--studio);gap:0}
+.mrow.stage .mtile{border:0;border-radius:0;background:var(--studio)}
+.mrow.stage.s-first .mstrip{border-radius:16px 16px 0 0}
+.mrow.stage.s-last .mstrip{border-radius:0 0 16px 16px}
+.mrow.stage.s-first.s-last .mstrip{border-radius:16px}
+.mrow.stage.s-first:not(.s-last){margin-bottom:-8px}
+.marrow{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:20px;line-height:1;padding:0}
+.marrow.l{left:6px}.marrow.r{right:6px}
+.mnames{margin:0;font-size:14px}
+@media (prefers-reduced-motion:reduce){.mtile{transition:none}}
+img.cut{object-fit:contain!important;background:var(--studio)}
+.cutprev{margin:0;display:flex;gap:12px;align-items:center}
+.cutprev img{width:96px;height:124px;border-radius:10px;border:1px solid var(--line);flex:0 0 auto}
+.cutprev figcaption{min-width:0}
 .note.warn{border-style:solid;border-color:var(--warn);background:var(--warn-soft);color:var(--ink)}
 
 /* swing-tag garment cards */
@@ -201,6 +224,14 @@ textarea{min-height:64px;resize:vertical}
     <input type="file" id="file" accept="image/*" multiple hidden>
   </section>
 
+  <!-- MIX -->
+  <section class="view" id="v-mix" hidden>
+    <div class="bar"><div class="chips grow" id="mixMode"></div><button class="btn small" data-act="mixshuffle">Shuffle</button></div>
+    <div id="mixRows" class="mix"></div>
+    <div id="mixFoot" class="view"></div>
+    <div id="mixTips" class="view"></div>
+  </section>
+
   <!-- STYLE ME -->
   <section class="view" id="v-style" hidden>
     <h2>What are you dressing for?</h2>
@@ -262,6 +293,7 @@ textarea{min-height:64px;resize:vertical}
 <nav class="tabs gut" aria-label="Sections">
   <div class="row">
     <a href="#wardrobe" data-tab="wardrobe"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a2 2 0 1 0-2-2M12 8v2l9 6.5a1 1 0 0 1-.6 1.8H3.6a1 1 0 0 1-.6-1.8L12 10"/></svg>Wardrobe</a>
+    <a href="#mix" data-tab="mix"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="5" rx="1.5"/><rect x="5" y="9.5" width="14" height="5" rx="1.5"/><rect x="5" y="16" width="14" height="5" rx="1.5"/></svg>Mix</a>
     <a href="#style" data-tab="style"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7z"/></svg>Style me</a>
     <a href="#plan" data-tab="plan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v5M16 3v5"/></svg>Plan</a>
     <a href="#saved" data-tab="saved"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v17l-6-4-6 4z"/></svg>Saved</a>
@@ -271,6 +303,7 @@ textarea{min-height:64px;resize:vertical}
 
 <div class="sheet" id="sheet" hidden><div class="panel gut" id="panel" role="dialog" aria-modal="true" aria-label="Item details"></div></div>
 <input type="file" id="fileBack" accept="image/*" hidden>
+<input type="file" id="fileReplace" accept="image/*" hidden>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script src="config.js"></script>
@@ -296,10 +329,10 @@ var F_TARGET={"Casual day":2,"Work":3.5,"Dinner or date":3.5,"Wedding or formal"
 var W_TARGET={"Hot":1,"Mild":2.5,"Cool":3.5,"Cold":4.6};
 var LS="closet-index-v1";
 
-var KINDS={item:"items",outfit:"outfits",wear:"wears",plan:"plans",shop:"shop",taste:"tastes"},LOOKS={},VIEWS=["wardrobe","style","plan","saved","shop"];
+var KINDS={item:"items",outfit:"outfits",wear:"wears",plan:"plans",shop:"shop",taste:"tastes"},LOOKS={},VIEWS=["wardrobe","mix","style","plan","saved","shop"];
 var S={items:new Map(),outfits:new Map(),wears:new Map(),plans:new Map(),shop:new Map(),tastes:new Map(),ideas:[],ready:false,filter:"all",q:"",
   answers:{occasion:"Casual day",weather:"Mild",vibe:"Relaxed",palette:"Surprise me",bold:"Show me the range"},
-  must:null,trends:null,results:[],gap:"",resultNote:"",busy:false,seen:[],slow:false};
+  must:null,trends:null,mix:{sel:{},mode:"sep",outer:false,sig:"",tips:null,busy:false},results:[],gap:"",resultNote:"",busy:false,seen:[],slow:false};
 var col=null,ai=null,canSee=false,maxImg=1,assets=null,ctl=null,localOnly=false;
 
 /* ---------- storage ---------- */
@@ -419,6 +452,154 @@ async function prep(file){
   if(!blob)throw new Error("encode");
   return {thumb:small.toDataURL("image/jpeg",.7),blob:blob,guess:guessColour(small)};
 }
+/* ---------- clean cut-outs: upright, background removed, placed on one standard backdrop ---------- */
+var CUT_CATS={top:1,bottom:1,dress:1,outerwear:1},CUT_W=480,CUT_H={top:416,outerwear:416,bottom:624,dress:720},cutOn=true;
+function canCut(){return !!(ai&&ai.cutout&&cutOn)}
+function toBlob(c,q){return new Promise(function(res){c.toBlob(res,"image/jpeg",q||.82)})}
+function rotDeg(v){v=Math.round(Number(v)/90)*90;return v===90||v===180||v===270?v:0}
+function turned(src,deg){
+  deg=rotDeg(deg);if(!deg)return src;
+  var w=src.width,h=src.height,side=deg%180!==0,c=document.createElement("canvas");
+  c.width=side?h:w;c.height=side?w:h;
+  var x=c.getContext("2d");x.translate(c.width/2,c.height/2);x.rotate(deg*Math.PI/180);x.drawImage(src,-w/2,-h/2);return c;
+}
+function tilted(src,rad){
+  var w=src.width,h=src.height,c=Math.abs(Math.cos(rad)),s=Math.abs(Math.sin(rad)),cv=document.createElement("canvas");
+  cv.width=Math.ceil(w*c+h*s);cv.height=Math.ceil(w*s+h*c);
+  var x=cv.getContext("2d");x.translate(cv.width/2,cv.height/2);x.rotate(rad);x.drawImage(src,-w/2,-h/2);return cv;
+}
+async function blobCanvas(blob,max){return scaled(await decode(blob),max||1200)}
+/* Measures the cut-out from its transparency: drops stray blobs, then returns its box, how much of the photo it covers,
+   how much of it touches the photo's edge, and how far its long axis leans from vertical. */
+function cutShape(cv){
+  var W=cv.width,H=cv.height,x=cv.getContext("2d"),im=x.getImageData(0,0,W,H),d=im.data;
+  var g=Math.max(1,Math.round(Math.max(W,H)/160)),gw=Math.ceil(W/g),gh=Math.ceil(H/g),m=new Uint8Array(gw*gh),gx,gy,i,k,l;
+  for(gy=0;gy<gh;gy++)for(gx=0;gx<gw;gx++){
+    var px=Math.min(W-1,gx*g+(g>>1)),py=Math.min(H-1,gy*g+(g>>1));if(d[(py*W+px)*4+3]>110)m[gy*gw+gx]=1}
+  var lab=new Int32Array(gw*gh),sizes=[0],n=0,stack=[];
+  for(i=0;i<m.length;i++){
+    if(!m[i]||lab[i])continue;n++;var sz=0;stack.push(i);lab[i]=n;
+    while(stack.length){var p=stack.pop();sz++;var qy=(p/gw)|0,qx=p-qy*gw;
+      if(qx>0&&m[p-1]&&!lab[p-1]){lab[p-1]=n;stack.push(p-1)}
+      if(qx<gw-1&&m[p+1]&&!lab[p+1]){lab[p+1]=n;stack.push(p+1)}
+      if(qy>0&&m[p-gw]&&!lab[p-gw]){lab[p-gw]=n;stack.push(p-gw)}
+      if(qy<gh-1&&m[p+gw]&&!lab[p+gw]){lab[p+gw]=n;stack.push(p+gw)}}
+    sizes.push(sz)}
+  if(!n)return null;
+  var big=1;for(k=2;k<=n;k++)if(sizes[k]>sizes[big])big=k;
+  var keep=new Uint8Array(n+1),dropped=false;
+  for(k=1;k<=n;k++){keep[k]=sizes[k]>=sizes[big]*.2?1:0;if(!keep[k])dropped=true}
+  if(dropped){
+    for(var y=0;y<H;y++){var row=Math.min(gh-1,(y/g)|0)*gw;
+      for(var xx=0;xx<W;xx++){var a=(y*W+xx)*4+3;if(d[a]){l=lab[row+Math.min(gw-1,(xx/g)|0)];if(l&&!keep[l])d[a]=0}}}
+    x.putImageData(im,0,0)}
+  var cnt=0,x0=gw,x1=-1,y0=gh,y1=-1,edge=0,sx=0,sy=0;
+  for(gy=0;gy<gh;gy++)for(gx=0;gx<gw;gx++){l=lab[gy*gw+gx];if(!l||!keep[l])continue;
+    cnt++;sx+=gx;sy+=gy;if(gx<x0)x0=gx;if(gx>x1)x1=gx;if(gy<y0)y0=gy;if(gy>y1)y1=gy;
+    if(gx===0||gy===0||gx===gw-1||gy===gh-1)edge++}
+  var mx=sx/cnt,my=sy/cnt,cxx=0,cyy=0,cxy=0;
+  for(gy=0;gy<gh;gy++)for(gx=0;gx<gw;gx++){l=lab[gy*gw+gx];if(!l||!keep[l])continue;var ex=gx-mx,ey=gy-my;cxx+=ex*ex;cyy+=ey*ey;cxy+=ex*ey}
+  var ang=.5*Math.atan2(2*cxy,cxx-cyy),tr=cxx+cyy,dl=Math.sqrt((cxx-cyy)*(cxx-cyy)+4*cxy*cxy);
+  var bx=x0*g,by=y0*g;
+  return {box:{x:bx,y:by,w:Math.min(W-bx,(x1-x0+1)*g),h:Math.min(H-by,(y1-y0+1)*g)},cover:cnt/(gw*gh),edge:edge/(2*(gw+gh)),
+    tilt:ang>0?ang-Math.PI/2:ang+Math.PI/2,elong:Math.sqrt((tr+dl)/Math.max(tr-dl,1e-6))};
+}
+function bottomLen(it){var t=itemText(it);return /short/i.test(t)?.5:/mini/i.test(t)?.45:/skirt|capri|cropped|culotte/i.test(t)?.72:1}
+/* Every cut-out of a type is drawn at the same scale on the same canvas: tops sit on the bottom edge and bottoms hang
+   from the top edge, both centred, so a top stacked above a pair of trousers lines up like an outfit. */
+function composeCut(cv,box,it){
+  var cat=it.category,CH=CUT_H[cat]||416,out=document.createElement("canvas");out.width=CUT_W;out.height=CH;
+  var x=out.getContext("2d");x.fillStyle=getComputedStyle(document.documentElement).getPropertyValue("--studio").trim()||"#ECEEF3";x.fillRect(0,0,CUT_W,CH);
+  var k=Math.min(CH*.96*(cat==="bottom"?bottomLen(it):1)/box.h,CUT_W*.94/box.w),dw=box.w*k,dh=box.h*k;
+  var dy=cat==="top"||cat==="outerwear"?CH*.99-dh:CH*.01;
+  x.imageSmoothingQuality="high";x.drawImage(cv,box.x,box.y,box.w,box.h,(CUT_W-dw)/2,dy,dw,dh);
+  return out.toDataURL("image/jpeg",.84);
+}
+/* src is an upright canvas of the photo. Returns the fields to merge into the item, or null when no cut-out could be tried. */
+async function makeCut(src,it){
+  if(!canCut()||!CUT_CATS[it.category])return null;
+  var got;
+  try{got=await ai.cutout(await toBlob(scaled(src,1024),.88))}
+  catch(e){if(e&&e.code==="cutout_off")cutOn=false;return null}
+  var bmp=await decode(got.blob),cv=document.createElement("canvas");cv.width=bmp.width;cv.height=bmp.height;cv.getContext("2d").drawImage(bmp,0,0);
+  var first=cutShape(cv),sh=first;
+  if(!first||first.cover<.02)return {cut:null,cutState:"poor",cutWhy:"The item couldn't be told apart from the background."};
+  if(it.category==="bottom"&&first.elong>1.5&&Math.abs(first.tilt)>.07){cv=tilted(cv,-first.tilt);sh=cutShape(cv)||first}
+  var why=first.edge>.03?"Part of the item is outside the photo.":first.cover>.8?"The item fills the whole photo, so its outline is unclear.":
+    got.doubt>.5?"Its outline was hard to find against this background.":"";
+  return {cut:composeCut(cv,sh.box,it),cutState:why?"poor":"ok",cutWhy:why};
+}
+/* One number per photo: how far to turn it clockwise so the item is upright. */
+async function askTurn(blobs){
+  var none=blobs.map(function(){return 0});
+  if(!ai||!canSee||!blobs.length)return none;
+  try{
+    var n=blobs.length,r=await ai.json("There "+(n===1?"is 1 photo":"are "+n+" photos, in order")+". Each shows one clothing item or pair of shoes. "+
+      "For each photo, how many degrees CLOCKWISE must it be turned so the item is upright as worn, with the neckline or waistband at the top (shoes resting on their soles)? "+
+      "Use 0 when it is already upright or only slightly tilted. Reply with only a JSON array of "+n+" number"+(n===1?"":"s")+", each 0, 90, 180 or 270.",{images:blobs});
+    if(typeof r==="number")r=[r];
+    return blobs.map(function(_,i){return rotDeg(Array.isArray(r)?r[i]:0)});
+  }catch(e){return none}
+}
+async function fullCanvas(it){
+  try{
+    var u=/^[A-Za-z0-9_-]{8,64}$/.test(it.asset||"")?(assets&&assets.url?await assets.url(it.asset):"/_blob/"+it.asset):"";
+    if(u){var r=await fetch(u);if(r.ok)return await blobCanvas(await r.blob())}
+  }catch(e){}
+  return await blobCanvas(await (await fetch(thumb(it))).blob());
+}
+/* Replaces an item's photo with the upright canvas given: new small photo, new stored photo, new cut-out. */
+async function setPhoto(it,cv){
+  var n=Object.assign({},it,{thumb:scaled(cv,360).toDataURL("image/jpeg",.7),cut:null,cutState:"",cutWhy:""});
+  if(assets){try{var up=await assets.upload(await toBlob(cv),{type:"image/jpeg"});
+    if(up&&up.id){var old=it.asset;n.asset=up.id;if(old&&assets["delete"])assets["delete"](old).catch(function(){})}}catch(e){}}
+  try{var c=await makeCut(cv,n);if(c)Object.assign(n,c)}catch(e){}
+  await put(n);return n;
+}
+async function photoJob(id,label,work){
+  if(S.busy){toast("Still working on something else.");return}
+  var it=S.items.get(id);if(!it)return;
+  S.busy=true;toast(label);
+  try{await work(it);if(openId===id)openItem(id)}catch(e){toast("That didn't work. Try again.")}
+  finally{S.busy=false;renderWardrobe()}
+}
+var replaceTarget=null;
+function replacePhoto(file){
+  var id=replaceTarget;replaceTarget=null;if(!file||!id)return;
+  photoJob(id,"Replacing the photo…",async function(it){
+    var src=scaled(await decode(file),1200),turn=(await askTurn([await toBlob(scaled(src,512),.8)]))[0];
+    var n=await setPhoto(it,turned(src,turn));toast(n.cutState==="poor"?"Photo replaced, but it was still hard to cut out.":"Photo replaced.");
+  });
+}
+function tidyList(){return sortedItems().filter(function(i){return CUT_CATS[i.category]&&!i.cut&&i.cutState!=="poor"})}
+async function tidyAll(){
+  if(S.busy||!canCut())return;
+  var list=tidyList();if(!list.length)return;
+  S.busy=true;S.tidyStop=false;var done=0,poor=0;renderWardrobe();
+  var say=function(m){$("progress").innerHTML='<div class="note live"><span>'+esc(m)+'</span><button class="btn small" data-act="tidystop">Stop</button></div>'};
+  try{
+    for(var i=0;i<list.length&&!S.tidyStop&&cutOn;i+=maxImg){
+      var group=list.slice(i,i+maxImg),canv=[];
+      say("Cleaning up photos: "+Math.min(i+group.length,list.length)+" of "+list.length+". Keep this page open.");
+      for(var j=0;j<group.length;j++){try{canv.push(await fullCanvas(group[j]))}catch(e){canv.push(null)}}
+      var ok=canv.filter(Boolean),small=[];
+      for(j=0;j<ok.length;j++)small.push(await toBlob(scaled(ok[j],512),.8));
+      var turns=await askTurn(small),t=0;
+      for(j=0;j<group.length&&!S.tidyStop&&cutOn;j++){
+        if(!canv[j])continue;
+        var it=S.items.get(group[j].id),turn=turns[t++];if(!it)continue;
+        try{
+          var n;
+          if(turn)n=await setPhoto(it,turned(canv[j],turn));
+          else{var c=await makeCut(canv[j],it);if(!c)continue;n=Object.assign({},it,c);await put(n)}
+          if(n.cut||n.cutState==="poor")done++;if(n.cutState==="poor")poor++;
+        }catch(e){}
+      }
+    }
+  }finally{S.busy=false;$("progress").innerHTML="";renderWardrobe()}
+  toast(!cutOn?"Clean cut-outs aren't switched on yet.":done?"Cleaned up "+done+(done===1?" photo":" photos")+(poor?". "+poor+" would look better with a new photo.":"."):"No photos could be cleaned up. Try again later.");
+}
+
 function tagPrompt(n){
   return "You are tagging photos for a personal wardrobe app. There "+(n===1?"is 1 photo":"are "+n+" photos, in order")+
   ". Each shows one clothing item, pair of shoes, bag or accessory; if several things are visible, describe the main one. "+
@@ -431,6 +612,7 @@ function tagPrompt(n){
   '"warmth": integer 1-5 (1 for very hot weather, 5 for deep winter), "tags": up to 4 short style words, '+
   '"layer": for tops and outerwear only, "base" (worn next to the skin: t-shirt, shirt, tank, polo), "mid" (worn over a base: hoodie, sweatshirt, sweater, cardigan, overshirt, gilet) or "outer" (jacket, blazer, coat); "" for everything else. Hoodies, sweatshirts and sweaters are category "top" with layer "mid", not outerwear, '+
   '"opens": true if the item has a full front opening (zip or buttons) and can be worn open, false if it pulls over the head, '+
+  '"rotate": 0, 90, 180 or 270: how many degrees CLOCKWISE this photo must be turned so the item is upright as worn, with the neckline or waistband at the top (shoes resting on their soles); 0 when it is already upright or only slightly tilted, '+
   '"view": "front" or "back" (which side of the item the photo shows), '+
   '"sameAs": the 1-based position of another photo in this batch that shows the SAME physical item from its other side, or null. Pair two photos only when they are clearly one garment seen front and back (same colour, fabric, cut, trims and wear); two similar but separate items are not a pair, and a photo pairs with at most one other, '+
   '"backNote": for a back view, a few words on what the back shows, such as "large tour-date print" or "plain"; otherwise ""}. '+
@@ -486,11 +668,19 @@ async function addPhotos(files){
       /* an unpaired last photo may have its other side in the next batch: look at it again there */
       var last=chunk.length-1;
       if(tags&&queue.length&&chunk.length>1&&!used[last]&&!chunk[last].deferred){chunk[last].deferred=true;queue.unshift(chunk[last]);chunk.pop()}
+      for(var u=0;u<chunk.length;u++){
+        var turn=rotDeg(tags&&tags[u]&&tags[u].rotate);
+        if(turn){try{var up0=turned(await blobCanvas(chunk[u].blob),turn);chunk[u].blob=await toBlob(up0);chunk[u].thumb=scaled(up0,360).toDataURL("image/jpeg",.7)}catch(e){}}
+      }
       for(var j=0;j<chunk.length;j++){
         if(isBack[j])continue;
         var t=tags?tags[j]:null;
         if(t&&t.category==="none"){skipped++;continue}
         var it=makeItem(chunk[j],t);
+        if(canCut()&&CUT_CATS[it.category]){
+          say("Cleaning up photo "+(added.length+1)+"…");
+          try{var cf=await makeCut(await blobCanvas(chunk[j].blob),it);if(cf)Object.assign(it,cf)}catch(e){}
+        }
         say("Saving "+(added.length+1)+"…");
         if(assets){try{var up=await assets.upload(chunk[j].blob,{type:"image/jpeg"});if(up&&up.id)it.asset=up.id}catch(e){}}
         if(backFor[j]!=null){
@@ -505,7 +695,9 @@ async function addPhotos(files){
   var untagged=added.filter(function(a){return a.review}).length;
   if(!added.length)toast(skipped?"Those photos couldn't be read as clothing.":"Nothing was added.");
   else if(untagged)toast("Added "+added.length+". Tap each one to set its type and colour.");
-  else toast("Added "+added.length+(added.length===1?" piece":" pieces")+(paired?" ("+paired+" with front and back)":"")+(skipped?", skipped "+skipped:"")+".");
+  else{var hard=added.filter(function(a){return a.cutState==="poor"}).length;
+    toast("Added "+added.length+(added.length===1?" piece":" pieces")+(paired?" ("+paired+" with front and back)":"")+(skipped?", skipped "+skipped:"")+"."+
+      (hard?" "+hard+(hard===1?" photo was":" photos were")+" hard to cut out; a better photo would help.":""))}
   if(added.length===1&&added[0].review)openItem(added[0].id);
 }
 
@@ -513,6 +705,9 @@ async function addPhotos(files){
 function sortedItems(){return Array.from(S.items.values()).sort(function(a,b){return (a.added||0)-(b.added||0)})}
 function dots(it){return '<span class="dots">'+(it.colors||[]).slice(0,3).map(function(c){return '<span class="dot" style="background:'+safeHex(c.hex)+'"></span>'}).join("")+"</span>"}
 function thumb(it){return /^data:image\//.test(it.thumb||"")?it.thumb:""}
+function hasCut(it){return /^data:image\//.test(it.cut||"")}
+function pic(it){return hasCut(it)?it.cut:thumb(it)}
+function picAttr(it){return (hasCut(it)?' class="cut"':"")+' src="'+pic(it)+'"'}
 function bigSrc(it){return thumb(it)}
 function backThumb(it){return /^data:image\//.test(it.backThumb||"")?it.backThumb:""}
 function backSrc(it){return backThumb(it)}
@@ -531,6 +726,9 @@ function renderWardrobe(){
   else if(S.ready&&localOnly)note='<div class="note">Your closet is being kept on this device only, in this browser.</div>';
   if(S.ready&&ai&&!canSee&&n<3)note+='<div class="note">Automatic recognition isn\'t available here, so set each item\'s type and colour by hand after adding it.</div>';
   if(S.filter==="wash"&&washN)note+='<div class="bar"><button class="btn small" data-act="washall">Everything is back from the wash</button></div>';
+  var todo=S.ready&&canCut()&&!S.busy?tidyList().length:0;
+  if(todo)note+='<div class="note">'+todo+(todo===1?" photo hasn't":" photos haven't")+' been cleaned up yet. Cleaning turns each one upright and cuts it out onto a plain backdrop.<br>'+
+    '<button class="btn small" data-act="tidy">Clean up photos</button></div>';
   $("storeNote").innerHTML=note;
   var rail=$("rail");
   if(!S.ready){rail.className="";rail.innerHTML='<div class="note">Opening your closet…</div>';return}
@@ -551,8 +749,8 @@ function renderWardrobe(){
   rail.className="rail";
   rail.innerHTML=list.reverse().map(function(x){var it=x.it;
     return '<button class="tag'+(it.wash?" inwash":"")+'" data-act="open" data-id="'+esc(it.id)+'"><span class="punch"></span>'+
-      (it.wash?'<span class="flag wash">IN THE WASH</span>':it.review?'<span class="flag">CHECK TAGS</span>':"")+
-      '<img alt="" loading="lazy" src="'+thumb(it)+'">'+
+      (it.wash?'<span class="flag wash">IN THE WASH</span>':it.review?'<span class="flag">CHECK TAGS</span>':it.cutState==="poor"?'<span class="flag">BETTER PHOTO?</span>':"")+
+      '<img alt="" loading="lazy"'+picAttr(it)+'>'+
       '<span class="info"><span class="mono">No. '+("00"+x.no).slice(-3)+" · "+esc(CAT_ONE[it.category]||"Item")+(backThumb(it)?" · front + back":"")+"</span>"+
       '<span class="name">'+esc(it.name)+"</span>"+dots(it)+"</span></button>"}).join("");
 }
@@ -632,6 +830,7 @@ function lookCard(o,idx,mode){
   if(o.layering)facts+='<dt class="mono">Layering</dt><dd>'+esc(o.layering)+"</dd>";
   if(Array.isArray(o.moves)&&o.moves.length)facts+='<dt class="mono">Moves</dt><dd>'+o.moves.map(esc).join("<br>")+"</dd>";
   if(o.tip)facts+='<dt class="mono">Wear it</dt><dd>'+esc(o.tip)+"</dd>";
+  if(o.swap)facts+='<dt class="mono">Swap</dt><dd>'+esc(o.swap)+"</dd>";
   var saved=mode==="saved"||Array.from(S.outfits.values()).some(function(x){return x.key===o.key});
   var ref=mode+":"+(o.id||o.key||keyOf(o.itemIds||[]));LOOKS[ref]=o;
   var acts=mode==="saved"
@@ -645,7 +844,7 @@ function lookCard(o,idx,mode){
      '<button class="btn small" data-act="ratedown" data-ref="'+esc(ref)+'">Less like this</button>';
   return '<article class="look"><div class="mono">'+(mode==="saved"?esc(o.occasion||"Saved look"):mode==="view"?esc(o.label||"Planned look"):"Look "+(idx+1))+(o.level?" · "+esc(o.level):"")+"</div><h3>"+esc(o.title)+"</h3>"+
     '<div class="mock"><div class="stage">'+figure(items,o)+'</div><div class="pieces">'+
-    items.map(function(it){return '<button class="piece" data-act="open" data-id="'+esc(it.id)+'" aria-label="'+esc(it.name)+'"><img alt="" src="'+thumb(it)+'"><span>'+esc(CAT_ONE[it.category]||"")+"</span></button>"}).join("")+
+    items.map(function(it){return '<button class="piece" data-act="open" data-id="'+esc(it.id)+'" aria-label="'+esc(it.name)+'"><img alt=""'+picAttr(it)+'><span>'+esc(CAT_ONE[it.category]||"")+"</span></button>"}).join("")+
     "</div></div>"+
     '<div class="check"><span class="dots">'+items.map(function(it){return '<span class="dot" style="background:'+mainHex(it)+'"></span>'}).join("")+
     '</span><span class="pill '+h.level+'">'+(h.level==="warn"?"Colour check: careful":"Colour check: works")+"</span><span>"+esc(h.label)+"</span></div>"+
@@ -672,7 +871,7 @@ function renderSaved(){
   $("saved").innerHTML=list.length?list.map(function(o,i){return lookCard(o,i,"saved")}).join("")
     :'<div class="note">Looks you save from Style me are kept here, ready for the morning you need them.</div>';
 }
-function strip(ids){return '<div class="strip">'+ids.map(function(id){var i=S.items.get(id);return i?'<img alt="'+esc(i.name)+'" src="'+thumb(i)+'">':""}).join("")+"</div>"}
+function strip(ids){return '<div class="strip">'+ids.map(function(id){var i=S.items.get(id);return i?'<img alt="'+esc(i.name)+'"'+picAttr(i)+'>':""}).join("")+"</div>"}
 function renderPlan(){
   var a=S.answers;
   $("planLede").textContent="Outfits for the next seven days. Filling empty days uses your Style me answers: "+a.occasion+", "+a.weather.toLowerCase()+" weather, "+a.vibe.toLowerCase()+".";
@@ -773,7 +972,125 @@ async function shopIdeas(){
   }catch(e){var m=aiMsg(e);if(m)toast(m)}
   finally{S.busy=false;$("shopGo").disabled=false;$("shopStatus").innerHTML="";renderShop()}
 }
-function renderAll(){renderWardrobe();renderStyle();renderSaved();renderPlan();renderShop()}
+/* ---------- mixer ---------- */
+var MIX_LABEL={outerwear:"Layer",top:"Top",bottom:"Bottom",dress:"Dress",shoes:"Shoes"},MIX_R={outerwear:.867,top:.867,bottom:1.3,dress:1.5,shoes:.5};
+function mixItems(cat){return availItems().filter(function(i){return i.category===cat})}
+function mixRows(){
+  var has=function(c){return mixItems(c).length>0},m=S.mix;
+  if(m.mode==="dress"&&!has("dress"))m.mode="sep";
+  if(m.mode==="sep"&&!has("top")&&!has("bottom")&&has("dress"))m.mode="dress";
+  var rows=[];
+  if(m.outer&&has("outerwear"))rows.push("outerwear");
+  if(m.mode==="dress")rows.push("dress");else{if(has("top"))rows.push("top");if(has("bottom"))rows.push("bottom")}
+  if(has("shoes"))rows.push("shoes");
+  return rows;
+}
+function mixStrip(cat){return document.querySelector('.mstrip[data-cat="'+cat+'"]')}
+function mixNearest(strip){
+  var c=strip.scrollLeft+strip.clientWidth/2,best=null,bd=1e9;
+  strip.querySelectorAll(".mtile").forEach(function(t){var d=Math.abs(t.offsetLeft+t.offsetWidth/2-c);if(d<bd){bd=d;best=t}});
+  return best;
+}
+function setMix(cat,id,scroll){
+  var strip=mixStrip(cat);if(!strip)return;
+  var changed=S.mix.sel[cat]!==id;S.mix.sel[cat]=id;
+  var tile=null;strip.querySelectorAll(".mtile").forEach(function(t){var on=t.dataset.id===id;t.classList.toggle("on",on);if(on)tile=t});
+  if(scroll&&tile&&strip.clientWidth){
+    var left=tile.offsetLeft+tile.offsetWidth/2-strip.clientWidth/2;
+    strip.scrollTo({left:left,behavior:scroll==="smooth"&&!matchMedia("(prefers-reduced-motion:reduce)").matches?"smooth":"auto"});
+  }
+  if(changed){S.mix.tips=null;renderMixFoot()}
+}
+function positionMix(){
+  mixRows().forEach(function(cat){
+    var list=mixItems(cat),cur=S.mix.sel[cat];
+    if(!list.some(function(i){return i.id===cur}))cur=list.length?list[0].id:null;
+    if(cur)setMix(cat,cur,"auto");
+  });
+  renderMixFoot();
+}
+function mixStep(cat,d){
+  var list=mixItems(cat),n=list.findIndex(function(i){return i.id===S.mix.sel[cat]});
+  if(!list.length)return;n=Math.max(0,Math.min(list.length-1,(n<0?0:n)+d));setMix(cat,list[n].id,"smooth");
+}
+function mixLook(){
+  var its=mixRows().map(function(c){return S.items.get(S.mix.sel[c])}).filter(Boolean);
+  var cats=its.map(function(i){return i.category});
+  if(!(cats.indexOf("dress")>=0||(cats.indexOf("top")>=0&&cats.indexOf("bottom")>=0)))return null;
+  var core=its.filter(function(i){return i.category==="top"||i.category==="bottom"||i.category==="dress"});
+  var ids=its.map(function(i){return i.id});
+  return Object.assign({title:core.map(function(i){return i.name}).join(" + ").slice(0,60),itemIds:ids,key:keyOf(ids)},S.mix.tips&&S.mix.tips.key===keyOf(ids)?S.mix.tips:{});
+}
+function renderMix(){
+  var m=S.mix,rows=mixRows(),has=function(c){return mixItems(c).length>0};
+  var chips="";
+  if(has("dress")&&(has("top")||has("bottom")))chips+='<button class="chip" data-act="mixmode" data-v="sep" aria-pressed="'+(m.mode==="sep")+'">Top and bottom</button>'+
+    '<button class="chip" data-act="mixmode" data-v="dress" aria-pressed="'+(m.mode==="dress")+'">Dress</button>';
+  if(has("outerwear"))chips+='<button class="chip" data-act="mixouter" aria-pressed="'+!!m.outer+'">'+(m.outer?"Layer on":"Add a layer")+"</button>";
+  $("mixMode").innerHTML=chips||'<span class="mono">Slide each row to mix</span>';
+  var box=$("mixRows");
+  if(!S.ready){box.innerHTML='<div class="note">Opening your closet…</div>';m.sig="";return}
+  if(!mixLookPossible()){box.innerHTML='<div class="note">Add at least one top and one bottom, or a dress, and you can slide through them here.</div>';m.sig="";$("mixFoot").innerHTML="";$("mixTips").innerHTML="";return}
+  var sig=rows.map(function(c){return c+":"+mixItems(c).map(function(i){return i.id+"."+pic(i).length}).join(",")}).join("|");
+  if(sig!==m.sig){
+    m.sig=sig;
+    box.innerHTML=rows.map(function(c,n){var list=mixItems(c),stage=!!CUT_CATS[c];
+      var first=stage&&(c==="outerwear"||!(n>0&&CUT_CATS[rows[n-1]]&&rows[n-1]!=="outerwear")),last=stage&&(c==="outerwear"||!(rows[n+1]&&CUT_CATS[rows[n+1]]));
+      return '<div class="mrow'+(stage?" stage":"")+(first?" s-first":"")+(last?" s-last":"")+'"><div class="mono mchip">'+MIX_LABEL[c]+' <span data-count="'+c+'"></span></div>'+
+        '<button class="marrow l" data-act="mixprev" data-cat="'+c+'" aria-label="Previous '+MIX_LABEL[c].toLowerCase()+'">‹</button>'+
+        '<div class="mstrip" data-cat="'+c+'" style="--r:'+MIX_R[c]+'">'+list.map(function(i){
+          return '<button class="mtile" data-act="mixpick" data-cat="'+c+'" data-id="'+esc(i.id)+'" aria-label="'+esc(i.name)+'"><img alt="" loading="lazy"'+picAttr(i)+'></button>'}).join("")+"</div>"+
+        '<button class="marrow r" data-act="mixnext" data-cat="'+c+'" aria-label="Next '+MIX_LABEL[c].toLowerCase()+'">›</button></div>'}).join("");
+    box.querySelectorAll(".mstrip").forEach(function(strip){var timer;
+      strip.addEventListener("scroll",function(){clearTimeout(timer);timer=setTimeout(function(){var t=mixNearest(strip);if(t)setMix(strip.dataset.cat,t.dataset.id,false)},90)},{passive:true})});
+    requestAnimationFrame(positionMix);
+  }
+  renderMixFoot();
+}
+function mixLookPossible(){var c=availItems().map(function(i){return i.category});return c.indexOf("dress")>=0||(c.indexOf("top")>=0&&c.indexOf("bottom")>=0)}
+function renderMixFoot(){
+  mixRows().forEach(function(c){var list=mixItems(c),n=list.findIndex(function(i){return i.id===S.mix.sel[c]}),b=document.querySelector('[data-count="'+c+'"]');
+    if(b)b.textContent=(n>=0?n+1:0)+"/"+list.length});
+  var o=mixLook(),foot=$("mixFoot");
+  if(!o){foot.innerHTML="";$("mixTips").innerHTML="";return}
+  LOOKS["mix:cur"]=o;
+  var its=o.itemIds.map(function(id){return S.items.get(id)}),h=harmony(its);
+  var saved=Array.from(S.outfits.values()).some(function(x){return x.key===o.key});
+  foot.innerHTML='<p class="mnames">'+its.map(function(i){return esc(i.name)}).join(" · ")+"</p>"+
+    '<div class="check"><span class="dots">'+its.map(function(i){return '<span class="dot" style="background:'+mainHex(i)+'"></span>'}).join("")+
+    '</span><span class="pill '+h.level+'">'+(h.level==="warn"?"Colour check: careful":"Colour check: works")+"</span><span>"+esc(h.label)+"</span></div>"+
+    '<div class="bar"><button class="btn small'+(saved?"":" primary")+'" data-act="mixsave"'+(saved?" disabled":"")+">"+(saved?"Saved":"Save this mix")+"</button>"+
+    '<button class="btn small" data-act="wore" data-ref="mix:cur">Wore this today</button>'+
+    '<button class="btn small" data-act="planpick" data-ref="mix:cur">Plan a day</button>'+
+    (ai?'<button class="btn small" id="mixTipGo" data-act="mixtips"'+(S.mix.busy?" disabled":"")+">"+(S.mix.busy?"Thinking…":"Get styling tips")+"</button>":"")+"</div>";
+  $("mixTips").innerHTML=S.mix.tips&&S.mix.tips.key===o.key?lookCard(Object.assign({},o,{label:"Styling this mix"}),0,"view"):"";
+}
+async function mixTips(){
+  var o=mixLook();if(!o||!ai||S.busy)return;
+  S.busy=true;S.mix.busy=true;renderMixFoot();
+  var line=function(i){return JSON.stringify({id:i.id,name:i.name,cat:i.category,type:i.type,colors:(i.colors||[]).map(function(c){return c.name||c.hex}),pattern:i.pattern,
+    formality:i.formality,warmth:i.warmth,back:i.backNote||undefined,layer:layerRole(i)||undefined,opens:layerRole(i)?opensFront(i):undefined})};
+  var picked=o.itemIds.map(function(id){return S.items.get(id)}),rest=availItems().filter(function(i){return o.itemIds.indexOf(i.id)<0});
+  try{
+    var raw=await ai.json("You are a personal stylist. This person built the outfit below themselves from their own clothes and wants your honest read on it.\n\nThe outfit, one JSON object per line:\n"+
+      picked.map(line).join("\n")+"\n\nOther pieces they own, for a possible swap:\n"+rest.map(function(i){return JSON.stringify({name:i.name,cat:i.category,colors:(i.colors||[]).map(function(c){return c.name||c.hex})})}).join("\n")+
+      "\n\nThey plan to wear it for: "+S.answers.occasion+", in "+S.answers.weather+" weather."+tasteText()+
+      (trendText()?"\n\nCurrent trends, as reference data. Mention one only if this outfit genuinely fits it:\n"+trendText():"")+
+      "\n\nBe honest and specific. Do not change the outfit; advise on how to wear exactly these pieces. Layering order is base, then mid, then outer; a piece with opens false pulls over the head and is worn closed.\n"+
+      'Reply with only JSON: {"title": 2-4 word name for the look, "why": one or two sentences on whether it works for the occasion and weather, and why, "colors": one sentence on the colour combination, '+
+      '"trendNote": one sentence naming a current styling idea it fits, or "", "level": "Conservative" or "In between" or "Fashion statement", '+
+      '"layers": ids of the tops and outerwear in the order they go on, innermost first, "layering": how to layer these pieces, or "", "moves": 2 or 3 short specific styling moves, '+
+      '"tip": one practical note, "swap": one sentence naming a single piece from their other clothes that would improve the look and what it replaces, or "" if nothing would}',{cache:false});
+    var t=function(v,n){return String(v||"").slice(0,n)};
+    if(!raw||typeof raw!=="object")throw {code:"invalid_json"};
+    S.mix.tips={key:o.key,title:t(raw.title,50)||o.title,why:t(raw.why,320),colors:t(raw.colors,220),trendNote:t(raw.trendNote,220),tip:t(raw.tip,220),swap:t(raw.swap,240),
+      level:["Conservative","In between","Fashion statement"].indexOf(raw.level)>=0?raw.level:"",layering:t(raw.layering,320),
+      layers:Array.isArray(raw.layers)?raw.layers.map(String).filter(function(id){return o.itemIds.indexOf(id)>=0}):[],
+      moves:Array.isArray(raw.moves)?raw.moves.slice(0,3).map(function(m){return t(m,140)}).filter(Boolean):[]};
+  }catch(e){var m=aiMsg(e);if(m)toast(m)}
+  finally{S.busy=false;S.mix.busy=false;renderMixFoot()}
+}
+function renderAll(){renderWardrobe();renderMix();renderStyle();renderSaved();renderPlan();renderShop()}
 
 function buildQuestions(){
   $("questions").innerHTML=QUESTIONS.map(function(q){
@@ -989,6 +1306,10 @@ function openItem(id){
         '<div class="bar"><button class="btn small" data-act="rmback">Remove back photo</button><button class="btn small" data-act="splitback">Not the same item? Split them</button></div>'
       :'<img class="hero" alt="'+esc(it.name)+'" src="'+bigSrc(it)+'" data-fb="'+thumb(it)+'">'+
         '<div class="bar"><button class="btn small" data-act="addback">Add a photo of the back</button></div>')+
+    (hasCut(it)?'<figure class="cutprev"><img class="cut" alt="Cut-out of '+esc(it.name)+'" src="'+it.cut+'"><figcaption class="mono">How it appears in outfits</figcaption></figure>':"")+
+    (it.cutState==="poor"?'<div class="note warn">This photo was hard to cut out cleanly. '+esc(it.cutWhy||"")+' A new photo of the whole item, laid flat on a plain surface that contrasts with it, will look much better.</div>':"")+
+    '<div class="bar"><button class="btn small" data-act="rotate">Rotate photo</button><button class="btn small" data-act="replacephoto">Replace photo</button>'+
+    (canCut()&&CUT_CATS[it.category]?'<button class="btn small" data-act="recut">'+(hasCut(it)?"Redo cut-out":"Cut out")+"</button>":"")+"</div>"+
     '<div class="field"><label for="f-name">Name</label><input type="text" id="f-name" maxlength="60" value="'+esc(it.name)+'"></div>'+
     '<div class="grid2"><div class="field"><label for="f-cat">Type</label><select id="f-cat">'+opt(CATS.slice(1).map(function(c){return [c[0],CAT_ONE[c[0]]]}),it.category)+"</select></div>"+
     '<div class="field"><label for="f-kind">Kind</label><input type="text" id="f-kind" maxlength="30" placeholder="jeans, blazer…" value="'+esc(it.type)+'"></div></div>'+
@@ -1045,11 +1366,13 @@ function route(){
   VIEWS.forEach(function(n){$("v-"+n).hidden=n!==v});
   document.querySelectorAll(".tabs a").forEach(function(a){if(a.dataset.tab===v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   window.scrollTo(0,0);
+  if(v==="mix")requestAnimationFrame(positionMix);
 }
 window.addEventListener("hashchange",route);
 document.addEventListener("error",function(e){var t=e.target;if(t&&t.tagName==="IMG"&&t.dataset.fb&&t.getAttribute("src")!==t.dataset.fb)t.src=t.dataset.fb},true);
 $("search").addEventListener("input",function(){S.q=this.value;renderWardrobe()});
 $("file").addEventListener("change",function(){var f=Array.from(this.files||[]);this.value="";addPhotos(f)});
+$("fileReplace").addEventListener("change",function(){var f=(this.files||[])[0];this.value="";replacePhoto(f)});
 $("fileBack").addEventListener("change",function(){var f=(this.files||[])[0];this.value="";addBack(f)});
 $("shopForm").addEventListener("submit",function(e){e.preventDefault();addShop($("shopText").value);$("shopText").value=""});
 $("sheet").addEventListener("click",function(e){if(e.target===this)closeSheet()});
@@ -1099,6 +1422,21 @@ document.addEventListener("click",function(e){
   else if(act==="shopdel"){var sx=S.shop.get(b.dataset.id);if(sx)drop(sx)}
   else if(act==="shopideas")shopIdeas();
   else if(act==="addidea"){var pick=S.ideas[Number(b.dataset.i)];if(pick){S.ideas.splice(Number(b.dataset.i),1);addShop(pick.piece,pick.why)}}
+  else if(act==="mixpick")setMix(b.dataset.cat,b.dataset.id,"smooth");
+  else if(act==="mixprev")mixStep(b.dataset.cat,-1);
+  else if(act==="mixnext")mixStep(b.dataset.cat,1);
+  else if(act==="mixmode"){S.mix.mode=b.dataset.v;renderMix()}
+  else if(act==="mixouter"){S.mix.outer=!S.mix.outer;renderMix()}
+  else if(act==="mixshuffle"){mixRows().forEach(function(c){var l=mixItems(c);if(l.length)setMix(c,l[Math.floor(Math.random()*l.length)].id,"smooth")})}
+  else if(act==="mixsave"){var mo=mixLook();if(mo){put(Object.assign(lookData(mo),{kind:"outfit",id:rid("o"),occasion:"My mix",saved:Date.now(),swap:mo.swap||""}));toast("Saved to your looks.")}}
+  else if(act==="mixtips")mixTips();
+  else if(act==="rotate"){var ri=readSheet();if(ri){put(ri);photoJob(ri.id,"Rotating…",async function(it){await setPhoto(it,turned(await fullCanvas(it),90))})}}
+  else if(act==="recut"){var ci=readSheet();if(ci){put(ci);photoJob(ci.id,"Cutting out…",async function(it){
+    var c=await makeCut(await fullCanvas(it),it);if(!c){toast(cutOn?"The cut-out service didn't respond. Try again.":"Clean cut-outs aren't switched on yet.");return}
+    await put(Object.assign({},S.items.get(it.id)||it,c))})}}
+  else if(act==="replacephoto"){var pi=readSheet();if(pi){put(pi);replaceTarget=pi.id;$("fileReplace").click()}}
+  else if(act==="tidy")tidyAll();
+  else if(act==="tidystop"){S.tidyStop=true;b.disabled=true;b.textContent="Stopping…"}
   else if(act==="refreshtrends")refreshTrends();
   else if(act==="delitem"){
     if(Date.now()-armed>4000){armed=Date.now();b.textContent="Tap again to delete for good";return}
